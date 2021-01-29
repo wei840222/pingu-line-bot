@@ -16,7 +16,6 @@ line_bot_api = LineBotApi(os.getenv('LINE_CHANNEL_ACCESS_TOKEN', None))
 handler = WebhookHandler(os.getenv('LINE_CHANNEL_SECRET', None))
 
 app = FastAPI()
-logger = logging.getLogger("gunicorn.error")
 
 
 @app.post("/callback")
@@ -27,7 +26,7 @@ async def callback(request: Request, response: Response):
     # get request body as text
     body = await request.body()
 
-    logger.info('webhook body: %s', body)
+    logging.info('webhook body: %s', body)
 
     # handle webhook body
     try:

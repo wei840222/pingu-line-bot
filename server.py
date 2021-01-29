@@ -11,8 +11,6 @@ handler = WebhookHandler(os.getenv('LINE_CHANNEL_SECRET', None))
 
 app = FastAPI()
 
-app.mount("/static", StaticFiles(directory="static"), name="static")
-
 
 @app.post("/callback")
 async def callback(request: Request, response: Response):
@@ -30,6 +28,9 @@ async def callback(request: Request, response: Response):
         return 'InvalidSignatureError'
 
     return 'OK'
+
+
+app.mount("/static", StaticFiles(directory="static"), name="static")
 
 
 @handler.add(MessageEvent, message=TextMessage)

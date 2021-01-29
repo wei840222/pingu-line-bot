@@ -3,13 +3,14 @@ import uvicorn
 from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
 from linebot import LineBotApi, WebhookHandler
-from linebot.models import MessageEvent, TextMessage, TextSendMessage
+from linebot.models import MessageEvent, TextMessage, AudioSendMessage
 
 app = FastAPI()
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 line_bot_api = LineBotApi(os.getenv('LINE_CHANNEL_ACCESS_TOKEN', None))
 bot = WebhookHandler(os.getenv('LINE_CHANNEL_SECRET', None))
+base_url = os.getenv('BASE_URL', None)
 
 
 @app.post('/callback')
@@ -24,7 +25,7 @@ async def callback(request: Request):
 def message_text(event):
     if event.message.text == '叫':
         line_bot_api.reply_message(
-            event.reply_token, TextSendMessage(text=event.message.text))
+            event.reply_token, AudioSendMessage(original_content_url=base_url + '/static/audio/noot_noot.mp3', duration=1000))
 
 
 if __name__ == '__main__':

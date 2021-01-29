@@ -1,5 +1,6 @@
 import os
 from fastapi import FastAPI, Request, Response, status
+from fastapi.staticfiles import StaticFiles
 from linebot import LineBotApi, WebhookHandler
 from linebot.exceptions import InvalidSignatureError
 from linebot.models import MessageEvent, TextMessage, TextSendMessage
@@ -9,6 +10,8 @@ line_bot_api = LineBotApi(os.getenv('LINE_CHANNEL_ACCESS_TOKEN', None))
 handler = WebhookHandler(os.getenv('LINE_CHANNEL_SECRET', None))
 
 app = FastAPI()
+
+app.mount("/static", StaticFiles(directory="static"), name="static")
 
 
 @app.post("/callback")

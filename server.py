@@ -1,15 +1,8 @@
 import os
-import logging
 from fastapi import FastAPI, Request, Response, status
-from linebot import (
-    LineBotApi, WebhookHandler
-)
-from linebot.exceptions import (
-    InvalidSignatureError
-)
-from linebot.models import (
-    MessageEvent, TextMessage, TextSendMessage,
-)
+from linebot import LineBotApi, WebhookHandler
+from linebot.exceptions import InvalidSignatureError
+from linebot.models import MessageEvent, TextMessage, TextSendMessage
 
 # get channel_secret and channel_access_token from your environment variable
 line_bot_api = LineBotApi(os.getenv('LINE_CHANNEL_ACCESS_TOKEN', None))
@@ -26,8 +19,6 @@ async def callback(request: Request, response: Response):
     # get request body as text
     body = await request.body()
 
-    logging.info('webhook body: %s', body)
-
     # handle webhook body
     try:
         handler.handle(body.decode('utf-8'), signature)
@@ -40,10 +31,9 @@ async def callback(request: Request, response: Response):
 
 @handler.add(MessageEvent, message=TextMessage)
 def message_text(event):
-    line_bot_api.reply_message(
-        event.reply_token,
-        TextSendMessage(text=event.message.text)
-    )
+    if event.message.text == '叫':
+        line_bot_api.reply_message(
+            event.reply_token, TextSendMessage(text=event.message.text))
 
 
 if __name__ == "__main__":

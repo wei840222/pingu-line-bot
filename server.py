@@ -1,6 +1,6 @@
 import os
+import logging
 from fastapi import FastAPI, Request, Response, status
-from fastapi.logger import logger
 from linebot import (
     LineBotApi, WebhookHandler
 )
@@ -16,6 +16,7 @@ line_bot_api = LineBotApi(os.getenv('LINE_CHANNEL_ACCESS_TOKEN', None))
 handler = WebhookHandler(os.getenv('LINE_CHANNEL_SECRET', None))
 
 app = FastAPI()
+logger = logging.getLogger("gunicorn.error")
 
 
 @app.post("/callback")
@@ -49,4 +50,5 @@ def message_text(event):
 if __name__ == "__main__":
     import uvicorn
 
-    uvicorn.run("server:app", host="0.0.0.0", port=8000, reload=True, debug=True)
+    uvicorn.run("server:app", host="0.0.0.0",
+                port=8000, reload=True, debug=True)

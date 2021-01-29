@@ -36,6 +36,8 @@ async def callback(request: Request, response: Response):
     # get request body as text
     body = await request.body()
 
+    print(body)
+
     # handle webhook body
     try:
         handler.handle(body.decode('utf-8'), signature)

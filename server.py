@@ -38,7 +38,7 @@ async def callback(request: Request, response: Response):
 
     # handle webhook body
     try:
-        handler.handle(str(body), signature)
+        handler.handle(body.decode('utf-8'), signature)
     except InvalidSignatureError:
         response.status_code = status.HTTP_400_BAD_REQUEST
 

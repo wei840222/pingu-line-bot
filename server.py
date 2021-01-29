@@ -29,12 +29,12 @@ app = FastAPI()
 
 
 @app.post("/callback")
-def callback(request: Request, response: Response):
+async def callback(request: Request, response: Response):
     # get X-Line-Signature header value
     signature = request.headers['X-Line-Signature']
 
     # get request body as text
-    body = request.body()
+    body = await request.body()
 
     # handle webhook body
     try:

@@ -1,7 +1,6 @@
 import os
-import sys
-from typing import Optional
 from fastapi import FastAPI, Request, Response, status
+from fastapi.logger import logger
 from linebot import (
     LineBotApi, WebhookHandler
 )
@@ -13,17 +12,8 @@ from linebot.models import (
 )
 
 # get channel_secret and channel_access_token from your environment variable
-channel_secret = os.getenv('LINE_CHANNEL_SECRET', None)
-channel_access_token = os.getenv('LINE_CHANNEL_ACCESS_TOKEN', None)
-if channel_secret is None:
-    print('Specify LINE_CHANNEL_SECRET as environment variable.')
-    sys.exit(1)
-if channel_access_token is None:
-    print('Specify LINE_CHANNEL_ACCESS_TOKEN as environment variable.')
-    sys.exit(1)
-
-line_bot_api = LineBotApi(channel_access_token)
-handler = WebhookHandler(channel_secret)
+line_bot_api = LineBotApi(os.getenv('LINE_CHANNEL_ACCESS_TOKEN', None))
+handler = WebhookHandler(os.getenv('LINE_CHANNEL_SECRET', None))
 
 app = FastAPI()
 
@@ -36,7 +26,7 @@ async def callback(request: Request, response: Response):
     # get request body as text
     body = await request.body()
 
-    print(body)
+    logger.info('webhook body: %s', body)
 
     # handle webhook body
     try:
@@ -54,3 +44,9 @@ def message_text(event):
         event.reply_token,
         TextSendMessage(text=event.message.text)
     )
+
+
+if __name__ == "__main__":
+    import uvicorn
+
+    uvicorn.run("server:app", host="0.0.0.0", port=8000, reload=True, debug=True)

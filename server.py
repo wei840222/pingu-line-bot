@@ -1,6 +1,5 @@
 import os
 from fastapi import FastAPI, Request, Response, status
-from fastapi.staticfiles import StaticFiles
 from linebot import LineBotApi, WebhookHandler
 from linebot.exceptions import InvalidSignatureError
 from linebot.models import MessageEvent, TextMessage, TextSendMessage
@@ -28,9 +27,6 @@ async def callback(request: Request, response: Response):
         return 'InvalidSignatureError'
 
     return 'OK'
-
-
-app.mount("/static", StaticFiles(directory="static"), name="static")
 
 
 @handler.add(MessageEvent, message=TextMessage)

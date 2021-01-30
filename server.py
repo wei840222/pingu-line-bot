@@ -11,7 +11,7 @@ app.mount(
 
 lineBotApi = linebot.LineBotApi(os.getenv('LINE_CHANNEL_ACCESS_TOKEN', None))
 bot = linebot.WebhookHandler(os.getenv('LINE_CHANNEL_SECRET', None))
-base_url = os.getenv('BASE_URL', None)
+baseUrl = os.getenv('BASE_URL', None)
 
 
 @app.post('/callback')
@@ -27,7 +27,7 @@ def message_text(event):
     if event.message.text == '叫':
         lineBotApi.reply_message(
             event.reply_token, linebotModels.AudioSendMessage(
-                original_content_url=base_url + '/static/audio/noot_noot.mp3', duration=1000))
+                original_content_url=f'{baseUrl}/static/audio/noot_noot.mp3', duration=1000))
 
 
 if __name__ == '__main__':

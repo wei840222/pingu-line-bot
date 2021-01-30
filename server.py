@@ -7,7 +7,7 @@ import linebot.models as linebotModels
 
 app = fastapi.FastAPI()
 app.mount(
-    "/static", fastapiStaticfiles.StaticFiles(directory="static"), name="static")
+    '/static', fastapiStaticfiles.StaticFiles(directory='static'), name='static')
 
 lineBotApi = linebot.LineBotApi(os.getenv('LINE_CHANNEL_ACCESS_TOKEN', None))
 bot = linebot.WebhookHandler(os.getenv('LINE_CHANNEL_SECRET', None))

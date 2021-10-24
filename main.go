@@ -44,7 +44,7 @@ func main() {
 				switch message := event.Message.(type) {
 				case *linebot.TextMessage:
 					if message.Text == "叫" {
-						if _, err = bot.ReplyMessage(event.ReplyToken, linebot.NewAudioMessage(joinURL(baseURL, "/static/audio/noot_noot.mp3"), 1)).
+						if _, err = bot.ReplyMessage(event.ReplyToken, linebot.NewAudioMessage(joinURL(baseURL, "/static/audio/noot_noot.mp3"), 1000)).
 							WithContext(r.Context()).
 							Do(); err != nil {
 							log.Print(err)

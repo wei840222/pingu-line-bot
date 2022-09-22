@@ -9,8 +9,8 @@ import (
 	"path"
 	"strings"
 
-	"github.com/line/line-bot-sdk-go/linebot"
-	"github.com/line/line-bot-sdk-go/linebot/httphandler"
+	"github.com/line/line-bot-sdk-go/v7/linebot"
+	"github.com/line/line-bot-sdk-go/v7/linebot/httphandler"
 )
 
 //go:embed static
@@ -22,7 +22,6 @@ func joinURL(base string, paths ...string) string {
 }
 
 func main() {
-	port := os.Getenv("PORT")
 	baseURL := os.Getenv("BASE_URL")
 
 	linebotHandler, err := httphandler.New(
@@ -58,7 +57,7 @@ func main() {
 	http.Handle("/callback", linebotHandler)
 	http.Handle("/", http.FileServer(http.FS(staticFiles)))
 
-	if err := http.ListenAndServe(":"+port, nil); err != nil {
+	if err := http.ListenAndServe(":8080", nil); err != nil {
 		log.Fatal(err)
 	}
 }

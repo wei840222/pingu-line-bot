@@ -54,6 +54,10 @@ func main() {
 		}
 	})
 
+	http.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("OK"))
+	})
 	http.Handle("/callback", linebotHandler)
 	http.Handle("/", http.FileServer(http.FS(staticFiles)))
 

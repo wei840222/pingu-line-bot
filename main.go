@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"embed"
 	"fmt"
 	"log"
@@ -11,6 +12,14 @@ import (
 
 	"github.com/line/line-bot-sdk-go/v7/linebot"
 	"github.com/line/line-bot-sdk-go/v7/linebot/httphandler"
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/exporters/otlp/otlptrace"
+	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
+	"go.opentelemetry.io/otel/propagation"
+	"go.opentelemetry.io/otel/sdk/resource"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	semconv "go.opentelemetry.io/otel/semconv/v1.12.0"
 )
 
 //go:embed static
@@ -22,6 +31,29 @@ func joinURL(base string, paths ...string) string {
 }
 
 func main() {
+	exporter, err := otlptrace.New(context.Background(), otlptracegrpc.NewClient(
+		otlptracegrpc.WithInsecure(),
+		otlptracegrpc.WithEndpoint("opentelemetry-collector.observability.svc.cluster.local:4317"),
+	))
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	tp := sdktrace.NewTracerProvider(
+		sdktrace.WithSampler(sdktrace.AlwaysSample()),
+		sdktrace.WithBatcher(exporter),
+		sdktrace.WithResource(resource.NewWithAttributes(
+			semconv.SchemaURL,
+			semconv.ServiceNameKey.String("pingu-line-bot"),
+			semconv.ServiceVersionKey.String("0.0.1"),
+		)),
+	)
+
+	defer tp.Shutdown(context.Background())
+
+	otel.SetTracerProvider(tp)
+	otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(propagation.TraceContext{}, propagation.Baggage{}))
+
 	baseURL := os.Getenv("BASE_URL")
 
 	linebotHandler, err := httphandler.New(
@@ -32,12 +64,12 @@ func main() {
 		log.Fatal(err)
 	}
 
+	bot, err := linebotHandler.NewClient(linebot.WithHTTPClient(&http.Client{Transport: otelhttp.NewTransport(http.DefaultTransport)}))
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	linebotHandler.HandleEvents(func(events []*linebot.Event, r *http.Request) {
-		bot, err := linebotHandler.NewClient()
-		if err != nil {
-			log.Print(err)
-			return
-		}
 		for _, event := range events {
 			if event.Type == linebot.EventTypeMessage {
 				switch message := event.Message.(type) {
@@ -58,8 +90,9 @@ func main() {
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("OK"))
 	})
-	http.Handle("/callback", linebotHandler)
-	http.Handle("/", http.FileServer(http.FS(staticFiles)))
+
+	http.Handle("/callback", otelhttp.NewHandler(linebotHandler, "Handle LINE Bot Event"))
+	http.Handle("/", otelhttp.NewHandler(http.FileServer(http.FS(staticFiles)), "Static File"))
 
 	if err := http.ListenAndServe(":8080", nil); err != nil {
 		log.Fatal(err)

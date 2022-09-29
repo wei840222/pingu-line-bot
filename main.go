@@ -20,6 +20,7 @@ import (
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.12.0"
+	propagators_b3 "go.opentelemetry.io/contrib/propagators/b3"
 )
 
 //go:embed static
@@ -31,10 +32,7 @@ func joinURL(base string, paths ...string) string {
 }
 
 func main() {
-	exporter, err := otlptrace.New(context.Background(), otlptracegrpc.NewClient(
-		otlptracegrpc.WithInsecure(),
-		otlptracegrpc.WithEndpoint("opentelemetry-collector.observability.svc.cluster.local:4317"),
-	))
+	exporter, err := otlptrace.New(context.Background(), otlptracegrpc.NewClient(otlptracegrpc.WithInsecure(),))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -52,7 +50,7 @@ func main() {
 	defer tp.Shutdown(context.Background())
 
 	otel.SetTracerProvider(tp)
-	otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(propagation.TraceContext{}, propagation.Baggage{}))
+	otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(propagation.TraceContext{}, propagation.Baggage{}, propagators_b3.New()))
 
 	baseURL := os.Getenv("BASE_URL")
 

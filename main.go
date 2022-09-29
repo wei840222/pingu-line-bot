@@ -6,13 +6,16 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"net/http/httptrace"
 	"os"
 	"path"
 	"strings"
 
 	"github.com/line/line-bot-sdk-go/v7/linebot"
 	"github.com/line/line-bot-sdk-go/v7/linebot/httphandler"
+	"go.opentelemetry.io/contrib/instrumentation/net/http/httptrace/otelhttptrace"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
+	propagators_b3 "go.opentelemetry.io/contrib/propagators/b3"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
@@ -20,7 +23,6 @@ import (
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.12.0"
-	propagators_b3 "go.opentelemetry.io/contrib/propagators/b3"
 )
 
 //go:embed static
@@ -32,7 +34,7 @@ func joinURL(base string, paths ...string) string {
 }
 
 func main() {
-	exporter, err := otlptrace.New(context.Background(), otlptracegrpc.NewClient(otlptracegrpc.WithInsecure(),))
+	exporter, err := otlptrace.New(context.Background(), otlptracegrpc.NewClient(otlptracegrpc.WithInsecure()))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -74,7 +76,7 @@ func main() {
 				case *linebot.TextMessage:
 					if message.Text == "叫" {
 						if _, err = bot.ReplyMessage(event.ReplyToken, linebot.NewAudioMessage(joinURL(baseURL, "/static/audio/noot_noot.mp3"), 1000)).
-							WithContext(r.Context()).
+							WithContext(httptrace.WithClientTrace(r.Context(), otelhttptrace.NewClientTrace(r.Context()))).
 							Do(); err != nil {
 							log.Print(err)
 						}

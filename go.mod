@@ -4,6 +4,7 @@ go 1.19
 
 require (
 	github.com/line/line-bot-sdk-go/v7 v7.17.0
+	go.opentelemetry.io/contrib/instrumentation/net/http/httptrace/otelhttptrace v0.36.1
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.36.0
 	go.opentelemetry.io/contrib/propagators/b3 v1.10.0
 	go.opentelemetry.io/otel v1.10.0

@@ -34,7 +34,7 @@ func joinURL(base string, paths ...string) string {
 }
 
 func main() {
-	exporter, err := otlptrace.New(context.Background(), otlptracegrpc.NewClient(otlptracegrpc.WithInsecure()))
+	exporter, err := otlptrace.New(context.Background(), otlptracegrpc.NewClient())
 	if err != nil {
 		log.Fatal(err)
 	}

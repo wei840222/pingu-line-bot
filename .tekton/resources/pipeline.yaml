@@ -1,0 +1,105 @@
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  name: source-code-to-url
+spec:
+  description: This pipeline clones a git repo, then build and push docker image using clould native buildpacks. Finally deploy to cluster by kn command.
+  params:
+  - name: source-code-url
+    type: string
+    description: The git repo URL to clone from.
+  - name: commit-sha
+    type: string
+    description: The git repo commit sha hash to clone from.
+  - name: image-registry-url
+    type: string
+    description: The container registry url to push.
+  - name: application-namespace
+    type: string
+    description: The namespace to deploy application.
+  - name: application-name
+    type: string
+    description: The name of the application.
+  workspaces:
+  - name: shared-data
+    description: This workspace contains the cloned repo files, so they can be read by the next task.
+  - name: registry-credentials
+    description: Container registry username and password.
+  - name: application-env-credentials
+    description: Environment variable for application runtime.
+  tasks:
+  - name: fetch-source
+    taskRef:
+      name: git-clone
+    workspaces:
+    - name: output
+      workspace: shared-data
+    params:
+    - name: url
+      value: $(params.source-code-url)
+    - name: revision
+      value: $(params.commit-sha)
+  - name: image-tag
+    taskRef:
+      name: gen-image-tag
+    params:
+    - name: revision
+      value: $(params.commit-sha)
+  - name: build-push
+    runAfter:
+    - fetch-source
+    - image-tag
+    taskRef:
+      name: buildpacks
+    workspaces:
+    - name: source
+      workspace: shared-data
+    - name: dockerconfig
+      workspace: registry-credentials
+    params:
+    - name: BUILDER_IMAGE
+      value: gcr.io/buildpacks/builder:v1
+    - name: APP_IMAGE
+      value: $(params.image-registry-url):$(tasks.image-tag.results.tag)
+  - name: kn-apply-with-application-env
+    runAfter:
+    - build-push
+    when:
+    - input: $(workspaces.application-env-credentials.bound)
+      operator: in
+      values:
+      - "true"
+    taskRef:
+      name: kn
+    workspaces:
+    - name: credentials
+      workspace: application-env-credentials
+    params:
+    - name: ARGS
+      value:
+      - ksvc
+      - apply
+      - --namespace=$(params.application-namespace)
+      - --image=$(params.image-registry-url):$(tasks.image-tag.results.tag)
+      - --env-file=$(workspaces.credentials.path)/env.txt
+      - --annotation=instrumentation.opentelemetry.io/inject-sdk=true
+      - $(params.application-name)
+  - name: kn-apply
+    runAfter:
+    - build-push
+    when:
+    - input: $(workspaces.application-env-credentials.bound)
+      operator: in
+      values:
+      - "false"
+    taskRef:
+      name: kn
+    params:
+    - name: ARGS
+      value:
+      - ksvc
+      - apply
+      - --namespace=$(params.application-namespace)
+      - --image=$(params.image-registry-url):$(tasks.image-tag.results.tag)
+      - --annotation=instrumentation.opentelemetry.io/inject-sdk=true
+      - $(params.application-name)

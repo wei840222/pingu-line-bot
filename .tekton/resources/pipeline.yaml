@@ -31,6 +31,7 @@ spec:
   - name: fetch-source
     taskRef:
       name: git-clone
+      kind: ClusterTask
     workspaces:
     - name: output
       workspace: shared-data
@@ -42,6 +43,7 @@ spec:
   - name: image-tag
     taskRef:
       name: gen-image-tag
+      kind: ClusterTask
     params:
     - name: revision
       value: $(params.commit-sha)
@@ -51,6 +53,7 @@ spec:
     - image-tag
     taskRef:
       name: buildpacks
+      kind: ClusterTask
     workspaces:
     - name: source
       workspace: shared-data
@@ -71,6 +74,7 @@ spec:
       - "true"
     taskRef:
       name: kn
+      kind: ClusterTask
     workspaces:
     - name: credentials
       workspace: application-env-credentials
@@ -94,6 +98,7 @@ spec:
       - "false"
     taskRef:
       name: kn
+      kind: ClusterTask
     params:
     - name: ARGS
       value:

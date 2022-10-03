@@ -1,0 +1,8 @@
+nameReference:
+- kind: Secret
+  version: v1
+  fieldSpecs:
+  - path: spec/template/spec/resourcetemplates/spec/workspaces/secret/secretName
+    kind: Trigger
+    group: triggers.tekton.dev
+    version: v1beta1

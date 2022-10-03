@@ -1,0 +1,17 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: tekton-pipelines
+namePrefix: wei840222-pingu-line-bot-
+configurations:
+- ./configurations/tekton-namereferences.yaml
+resources:
+- ./resources/trigger.yaml
+secretGenerator:
+- name: docker-credentials
+  type: Opaque
+  files:
+  - config.json=./configs/docker.json
+- name: env
+  type: Opaque
+  files:
+  - env.txt=./configs/env.txt

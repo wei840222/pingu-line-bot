@@ -101,6 +101,8 @@ func (h LINEHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	var events []*linebot.Event
 	json.Unmarshal([]byte(gjson.GetBytes(event.Data(), "body.events").String()), &events)
 	for _, event := range events {
+		b, _ := json.Marshal(event)
+		log.Printf("event: %s", b)
 		if event.Type == linebot.EventTypeMessage {
 			switch message := event.Message.(type) {
 			case *linebot.TextMessage:

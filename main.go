@@ -83,12 +83,6 @@ func main() {
 	if err := http.ListenAndServe(":8080", nil); err != nil {
 		log.Fatal(err)
 	}
-
-	c, err := cloudevents.NewClientHTTP()
-	if err != nil {
-		log.Fatalf("failed to create client, %v", err)
-	}
-	log.Fatal(c.StartReceiver(context.Background(), receive))
 }
 
 type LINEHandler struct {
@@ -122,9 +116,4 @@ func (h LINEHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	}
-}
-
-func receive(event cloudevents.Event) {
-	// do something with event.
-	fmt.Printf("%s", event)
 }

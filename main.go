@@ -93,7 +93,7 @@ type LINEHandler struct {
 func (h LINEHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	event, err := cloudevents.NewEventFromHTTPRequest(r)
 	if err != nil {
-		log.Printf("failed to parse CloudEvent from request: %s", err)
+		log.Printf("failed to parse CloudEvent from request2: %s", err)
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 		return
 	}

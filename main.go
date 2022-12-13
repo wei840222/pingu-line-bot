@@ -123,5 +123,5 @@ func (h CloudEventHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	req.Body = io.NopCloser(strings.NewReader(gjson.GetBytes(b, "body").String()))
 	log.Printf("header: %v", req.Header)
 
-	h.ServeHTTP(w, &req)
+	h.linebotHandler.ServeHTTP(w, &req)
 }

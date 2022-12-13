@@ -5,7 +5,6 @@ import (
 	"embed"
 	"encoding/json"
 	"fmt"
-	"io"
 	"log"
 	"net/http"
 	"net/http/httptrace"
@@ -73,29 +72,12 @@ func main() {
 		log.Fatal(err)
 	}
 
-	linebotHandler.HandleEvents(func(events []*linebot.Event, r *http.Request) {
-		for _, event := range events {
-			if event.Type == linebot.EventTypeMessage {
-				switch message := event.Message.(type) {
-				case *linebot.TextMessage:
-					if message.Text == "叫" {
-						if _, err = bot.ReplyMessage(event.ReplyToken, linebot.NewAudioMessage(joinURL(baseURL, "/static/audio/noot_noot.mp3"), 1000)).
-							WithContext(httptrace.WithClientTrace(r.Context(), otelhttptrace.NewClientTrace(r.Context()))).
-							Do(); err != nil {
-							log.Print(err)
-						}
-					}
-				}
-			}
-		}
-	})
-
 	http.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("OK"))
 	})
 
-	http.Handle("/line", otelhttp.NewHandler(&CloudEventHandler{linebotHandler}, "Handle LINE Bot Event"))
+	http.Handle("/line", otelhttp.NewHandler(&LINEHandler{baseURL, bot}, "Handle LINE Bot Event"))
 	http.Handle("/", otelhttp.NewHandler(http.FileServer(http.FS(staticFiles)), "Static File"))
 
 	if err := http.ListenAndServe(":8080", nil); err != nil {
@@ -103,11 +85,12 @@ func main() {
 	}
 }
 
-type CloudEventHandler struct {
-	linebotHandler *httphandler.WebhookHandler
+type LINEHandler struct {
+	baseURL string
+	bot     *linebot.Client
 }
 
-func (h CloudEventHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (h LINEHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	event, err := cloudevents.NewEventFromHTTPRequest(r)
 	if err != nil {
 		log.Printf("failed to parse CloudEvent from request: %s", err)
@@ -115,13 +98,23 @@ func (h CloudEventHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	b := event.Data()
-	log.Printf("data: %s", b)
+	var events []*linebot.Event
+	json.Unmarshal([]byte(gjson.GetBytes(event.Data(), "body.events").String()), &events)
+	for _, event := range events {
+		if event.Type == linebot.EventTypeMessage {
+			switch message := event.Message.(type) {
+			case *linebot.TextMessage:
+				if message.Text == "叫" {
+					if _, err = h.bot.ReplyMessage(event.ReplyToken, linebot.NewAudioMessage(joinURL(h.baseURL, "/static/audio/noot_noot.mp3"), 1000)).
+						WithContext(httptrace.WithClientTrace(r.Context(), otelhttptrace.NewClientTrace(r.Context()))).
+						Do(); err != nil {
+						log.Print(err)
+					}
+				}
+			}
+		}
+	}
 
-	var req http.Request
-	json.Unmarshal([]byte(gjson.GetBytes(b, "headers").String()), &req.Header)
-	req.Body = io.NopCloser(strings.NewReader(gjson.GetBytes(b, "body").String()))
-	log.Printf("header: %v", req.Header)
-
-	h.linebotHandler.ServeHTTP(w, &req)
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("OK"))
 }

@@ -3,7 +3,9 @@ package main
 import (
 	"context"
 	"embed"
+	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"net/http/httptrace"
@@ -11,8 +13,10 @@ import (
 	"path"
 	"strings"
 
+	cloudevents "github.com/cloudevents/sdk-go/v2"
 	"github.com/line/line-bot-sdk-go/v7/linebot"
 	"github.com/line/line-bot-sdk-go/v7/linebot/httphandler"
+	"github.com/tidwall/gjson"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/httptrace/otelhttptrace"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	propagators_b3 "go.opentelemetry.io/contrib/propagators/b3"
@@ -91,10 +95,33 @@ func main() {
 		w.Write([]byte("OK"))
 	})
 
-	http.Handle("/callback", otelhttp.NewHandler(linebotHandler, "Handle LINE Bot Event"))
+	http.Handle("/line", otelhttp.NewHandler(&CloudEventHandler{linebotHandler}, "Handle LINE Bot Event"))
 	http.Handle("/", otelhttp.NewHandler(http.FileServer(http.FS(staticFiles)), "Static File"))
 
 	if err := http.ListenAndServe(":8080", nil); err != nil {
 		log.Fatal(err)
 	}
+}
+
+type CloudEventHandler struct {
+	linebotHandler *httphandler.WebhookHandler
+}
+
+func (h CloudEventHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	event, err := cloudevents.NewEventFromHTTPRequest(r)
+	if err != nil {
+		log.Printf("failed to parse CloudEvent from request: %s", err)
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		return
+	}
+
+	b := event.Data()
+	log.Printf("data: %s", b)
+
+	var req http.Request
+	json.Unmarshal([]byte(gjson.GetBytes(b, "headers").String()), &req.Header)
+	req.Body = io.NopCloser(strings.NewReader(gjson.GetBytes(b, "body").String()))
+	log.Printf("header: %v", req.Header)
+
+	h.ServeHTTP(w, &req)
 }

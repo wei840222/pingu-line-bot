@@ -6,12 +6,12 @@ metadata:
     source: github-webhook
 spec:
   interceptors:
-  - name: "Only trigger by repo: wei840222/pingu-line-bot"
+  - name: "Only trigger by repo: wei840222/pingu-bot"
     ref:
       name: cel
     params:
     - name: filter
-      value: body.repository.full_name == 'wei840222/pingu-line-bot'
+      value: body.repository.full_name == 'wei840222/pingu-bot'
   - name: Only trigger by push event
     ref:
       name: github
@@ -51,7 +51,7 @@ spec:
           - name: application-namespace
             value: pingu
           - name: application-name
-            value: line-bot
+            value: bot
           workspaces:
           - name: shared-data
             volumeClaimTemplate:

@@ -106,5 +106,7 @@ spec:
       - apply
       - --namespace=$(params.application-namespace)
       - --image=$(params.image-registry-url):$(tasks.image-tag.results.tag)
+      - --annotation=prometheus.io/scrape=true
+      - --annotation=prometheus.io/port=2222 
       - --annotation=instrumentation.opentelemetry.io/inject-sdk=true
       - $(params.application-name)

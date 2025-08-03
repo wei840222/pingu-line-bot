@@ -1,0 +1,11 @@
+[project]
+name = "pingu-bot"
+version = "0.1.0"
+description = "A Flask-based LINE Bot that echoes user messages. The bot receives text messages from LINE users and responds by sending back the same message. Built with LINE Bot SDK and Flask web framework."
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "flask>=3.1.1",
+    "line-bot-sdk>=3.17.1",
+    "python-dotenv>=1.1.1",
+]

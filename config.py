@@ -19,3 +19,7 @@ class Config(BaseSettings, LoggerMixin):
     channel_access_token: Optional[str] = Field(
         default=None,
         description="The access token for the channel.")
+
+    temporal_address: str = Field(
+        default="localhost:7233",
+        description="The address of the Temporal frontend server.")

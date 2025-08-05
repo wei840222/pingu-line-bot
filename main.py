@@ -1,15 +1,11 @@
+import uuid
+import asyncio
 from contextlib import asynccontextmanager
-from fastapi import Request, FastAPI, HTTPException
+from fastapi import Request, FastAPI, HTTPException, status
+from temporalio.client import Client as TemporalClient
+from temporalio.worker import Worker as TemporalWorker
 
 from linebot.v3.webhook import WebhookParser
-from linebot.v3.messaging import (
-    AsyncApiClient,
-    AsyncMessagingApi,
-    Configuration,
-    ReplyMessageRequest,
-    TextMessage,
-    AudioMessage,
-)
 from linebot.v3.exceptions import (
     InvalidSignatureError
 )
@@ -18,7 +14,10 @@ from linebot.v3.webhooks import (
     TextMessageContent
 )
 
+
 from config import Config
+from workflow import HandleTextMessageWorkflow, HandleTextMessageWorkflowParams
+from activity import reply_audio_activity
 
 config = Config()
 logger = config.get_logger()
@@ -34,16 +33,27 @@ async def lifespan(app: FastAPI):
         raise ValueError(
             "Specify LINE_CHANNEL_ACCESS_TOKEN as environment variable.")
 
-    app.state.line_webhook_parser = WebhookParser(config.channel_secret)
+    client = await TemporalClient.connect(config.temporal_address)
+    app.state.temporal_client = client
+    worker = TemporalWorker(
+        client,
+        task_queue="PINGU_BOT",
+        workflows=[HandleTextMessageWorkflow],
+        activities=[reply_audio_activity],
+    )
 
-    configuration = Configuration(access_token=config.channel_access_token)
-    async_api_client = AsyncApiClient(configuration)
-    app.state.line_bot_api = AsyncMessagingApi(async_api_client)
+    task = asyncio.create_task(worker.run())
+    logger.info("Temporal worker started.")
 
     yield
 
-    await async_api_client.close()
-
+    task.cancel()
+    try:
+        await task  # Wait for the task to finish canceling
+    except asyncio.CancelledError:
+        await worker.shutdown()
+        logger.info(
+            "Application shutdown: Temporal worker shutdown gracefully.")
 
 app = FastAPI(lifespan=lifespan)
 
@@ -54,28 +64,32 @@ async def handle_callback(request: Request):
 
     # Get request body as text
     body = await request.body()
-    parser: WebhookParser = app.state.line_webhook_parser
 
     try:
-        events = parser.parse(body.decode(), signature)
+        events = WebhookParser(config.channel_secret).parse(
+            body.decode(), signature)
     except InvalidSignatureError:
-        raise HTTPException(status_code=400, detail="Invalid signature")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid signature")
 
-    line_bot_api: AsyncMessagingApi = app.state.line_bot_api
+    temporal_client: TemporalClient = app.state.temporal_client
 
     for event in events:  # type: ignore
+        logger.debug("Received webhook event.",
+                     data=event.to_json())  # type: ignore
         if not isinstance(event, MessageEvent):
             continue
         if not isinstance(event.message, TextMessageContent):
             continue
 
-        if event.message.text == "叫":
-            await line_bot_api.reply_message(
-                ReplyMessageRequest(
-                    replyToken=event.reply_token,
-                    messages=[AudioMessage(
-                        originalContentUrl="https://static.weii.dev/audio/pingu/noot_noot.mp3", duration=1000)]  # type: ignore
-                )  # type: ignore
-            )
+        await temporal_client.start_workflow(
+            HandleTextMessageWorkflow.run,
+            HandleTextMessageWorkflowParams(
+                reply_token=event.reply_token,  # type: ignore
+                message=event.message.text
+            ),
+            id=str(uuid.uuid4()),
+            task_queue="PINGU_BOT",
+        )
 
     return "OK"

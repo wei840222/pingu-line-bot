@@ -9,4 +9,5 @@ dependencies = [
     "line-bot-sdk>=3.17.1",
     "pydantic-settings>=2.10.1",
     "structlog>=25.4.0",
+    "temporalio>=1.15.0",
 ]

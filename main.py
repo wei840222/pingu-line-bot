@@ -7,7 +7,8 @@ from linebot.v3.messaging import (
     AsyncMessagingApi,
     Configuration,
     ReplyMessageRequest,
-    TextMessage
+    TextMessage,
+    AudioMessage,
 )
 from linebot.v3.exceptions import (
     InvalidSignatureError
@@ -68,11 +69,13 @@ async def handle_callback(request: Request):
         if not isinstance(event.message, TextMessageContent):
             continue
 
-        await line_bot_api.reply_message(
-            ReplyMessageRequest(
-                replyToken=event.reply_token,
-                messages=[TextMessage(text=event.message.text)]  # type: ignore
-            )  # type: ignore
-        )
+        if event.message.text == "叫":
+            await line_bot_api.reply_message(
+                ReplyMessageRequest(
+                    replyToken=event.reply_token,
+                    messages=[AudioMessage(
+                        originalContentUrl="https://static.weii.dev/audio/pingu/noot_noot.mp3", duration=1000)]  # type: ignore
+                )  # type: ignore
+            )
 
     return "OK"

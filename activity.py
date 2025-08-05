@@ -13,6 +13,8 @@ from linebot.v3.messaging import (
     AudioMessage,
 )
 
+from linebot.v3.messaging.exceptions import ApiException
+
 from config import Config
 
 config = Config()
@@ -71,10 +73,9 @@ async def reply_audio_activity(input: ReplyAudioActivityParams) -> Optional[Dict
         logger.info(
             "Reply audio message sent successfully.", response=response.to_json())  # type: ignore
         return response.to_dict()
-    except HTTPException as e:
-        if e.status_code == status.HTTP_400_BAD_REQUEST:
-            raise BadRequestHTTPException(
-                detail=e.detail, headers=dict(e.headers) if e.headers is not None else None)
+    except ApiException as e:
+        if e.status == status.HTTP_400_BAD_REQUEST:
+            raise BadRequestHTTPException(detail=e.body, headers=e.headers)
         raise e
     finally:
         await async_api_client.close()

@@ -1,9 +1,11 @@
 import uuid
 import asyncio
+from datetime import timedelta
 from contextlib import asynccontextmanager
 from fastapi import Request, FastAPI, HTTPException, status
 from temporalio.client import Client as TemporalClient
 from temporalio.worker import Worker as TemporalWorker
+from temporalio.common import RetryPolicy
 
 from linebot.v3.webhook import WebhookParser
 from linebot.v3.exceptions import (
@@ -73,6 +75,11 @@ async def handle_callback(request: Request):
             status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid signature")
 
     temporal_client: TemporalClient = app.state.temporal_client
+    retry_policy = RetryPolicy(
+        maximum_attempts=3,
+        maximum_interval=timedelta(seconds=60),
+        non_retryable_error_types=["BadRequestHTTPException"],
+    )
 
     for event in events:  # type: ignore
         logger.debug("Received webhook event.",
@@ -90,6 +97,7 @@ async def handle_callback(request: Request):
             ),
             id=str(uuid.uuid4()),
             task_queue="PINGU_BOT",
+            retry_policy=retry_policy,
         )
 
     return "OK"

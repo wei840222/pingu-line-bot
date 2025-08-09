@@ -2,10 +2,10 @@ from datetime import timedelta
 from dataclasses import dataclass
 from temporalio import workflow
 from temporalio.common import RetryPolicy
-from linebot.v3.messaging.exceptions import ApiException
 
 with workflow.unsafe.imports_passed_through():
     from activity import ReplyActivity, ReplyAudioActivityParams
+    from linebot.v3.messaging.exceptions import ApiException
 
 
 @dataclass

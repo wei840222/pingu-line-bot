@@ -41,7 +41,8 @@ async def lifespan(app: FastAPI):
         client,
         task_queue=config.temporal_task_queue,
         workflows=[HandleTextMessageWorkflow],
-        activities=[reply_activity.reply_audio],
+        activities=[reply_activity.reply_quick_reply,
+                    reply_activity.reply_audio],
     )
 
     task = asyncio.create_task(worker.run())
@@ -88,12 +89,13 @@ async def handle_callback(request: Request, x_line_signature: Annotated[str, Hea
             HandleTextMessageWorkflow.run,
             HandleTextMessageWorkflowParams(
                 reply_token=event.reply_token,  # type: ignore
+                quote_token=event.message.quote_token,
                 message=event.message.text
             ),
             id=event.webhook_event_id,
             task_queue=config.temporal_task_queue,
         )
         logger.info("Started workflow for handling text message.", extra={
-                    "task_queue": config.temporal_task_queue, "workflow_id": handle.id, "run_id": handle.run_id})
+                    "task_queue": config.temporal_task_queue, "workflow_id": handle.id})
 
     return "ACCEPTED"

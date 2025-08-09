@@ -47,7 +47,7 @@ class Config(BaseSettings, LoggerMixin):
         description="The address of the Temporal frontend server.")
 
     temporal_namespace: str = Field(
-        default="bot-farm",
+        default="default",
         description="The namespace for the Temporal workflows.")
 
     temporal_task_queue: str = Field(

@@ -1,11 +1,15 @@
-import uuid
 import asyncio
-from datetime import timedelta
+from typing import Annotated
 from contextlib import asynccontextmanager
-from fastapi import Request, FastAPI, HTTPException, status
+from fastapi import FastAPI, Header, Request, HTTPException, status
 from temporalio.client import Client as TemporalClient
 from temporalio.worker import Worker as TemporalWorker
-from temporalio.common import RetryPolicy
+
+from linebot.v3.messaging import (
+    AsyncApiClient,
+    AsyncMessagingApi,
+    Configuration,
+)
 
 from linebot.v3.webhook import WebhookParser
 from linebot.v3.exceptions import (
@@ -16,88 +20,80 @@ from linebot.v3.webhooks import (
     TextMessageContent
 )
 
-
-from config import Config
+from config import config, logger
 from workflow import HandleTextMessageWorkflow, HandleTextMessageWorkflowParams
-from activity import reply_audio_activity
-
-config = Config()
-logger = config.get_logger()
-logger.debug("Config loaded.", config=config)  # type: ignore
+from activity import ReplyActivity
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    if config.channel_secret is None:
-        raise ValueError(
-            "Specify LINE_CHANNEL_SECRET as environment variable.")
-    if config.channel_access_token is None:
-        raise ValueError(
-            "Specify LINE_CHANNEL_ACCESS_TOKEN as environment variable.")
-
-    client = await TemporalClient.connect(config.temporal_address)
+    client = await TemporalClient.connect(config.temporal_address, namespace=config.temporal_namespace)
     app.state.temporal_client = client
+    logger.debug("Connected to Temporal server.", extra={
+                 "address": config.temporal_address, "namespace": config.temporal_namespace})
+
+    line_bot_api = AsyncMessagingApi(AsyncApiClient(Configuration(
+        access_token=config.line_channel_access_token)))
+
+    reply_activity = ReplyActivity(line_bot_api)
+
     worker = TemporalWorker(
         client,
-        task_queue="PINGU_BOT",
+        task_queue=config.temporal_task_queue,
         workflows=[HandleTextMessageWorkflow],
-        activities=[reply_audio_activity],
+        activities=[reply_activity.reply_audio],
     )
 
     task = asyncio.create_task(worker.run())
-    logger.info("Temporal worker started.")
+    logger.info("Temporal worker started.", extra={
+                "task_queue": config.temporal_task_queue})
 
     yield
 
     task.cancel()
     try:
-        await task  # Wait for the task to finish canceling
+        await task
     except asyncio.CancelledError:
         await worker.shutdown()
         logger.info(
             "Application shutdown: Temporal worker shutdown gracefully.")
+        await line_bot_api.api_client.close()
+        config.logger.debug("Application shutdown: LINE API Client closed.")
 
-app = FastAPI(lifespan=lifespan)
+app = FastAPI(lifespan=lifespan, docs_url=None,
+              redoc_url=None, openapi_url=None)
 
 
-@app.post("/callback")
-async def handle_callback(request: Request):
-    signature = request.headers["X-LINE-Signature"]
-
-    # Get request body as text
+@app.post("/callback", status_code=status.HTTP_202_ACCEPTED)
+async def handle_callback(request: Request, x_line_signature: Annotated[str, Header()]):
     body = await request.body()
 
     try:
-        events = WebhookParser(config.channel_secret).parse(
-            body.decode(), signature)
+        events = WebhookParser(config.line_channel_secret).parse(
+            body.decode(), x_line_signature)
     except InvalidSignatureError:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid signature")
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid signature.")
 
     temporal_client: TemporalClient = app.state.temporal_client
-    retry_policy = RetryPolicy(
-        maximum_attempts=3,
-        maximum_interval=timedelta(seconds=60),
-        non_retryable_error_types=["BadRequestHTTPException"],
-    )
 
     for event in events:  # type: ignore
-        logger.debug("Received webhook event.",
-                     data=event.to_json())  # type: ignore
+        logger.debug("Received webhook event.", extra={"event": event})
         if not isinstance(event, MessageEvent):
             continue
         if not isinstance(event.message, TextMessageContent):
             continue
 
-        await temporal_client.start_workflow(
+        handle = await temporal_client.start_workflow(
             HandleTextMessageWorkflow.run,
             HandleTextMessageWorkflowParams(
                 reply_token=event.reply_token,  # type: ignore
                 message=event.message.text
             ),
-            id=str(uuid.uuid4()),
-            task_queue="PINGU_BOT",
-            retry_policy=retry_policy,
+            id=event.webhook_event_id,
+            task_queue=config.temporal_task_queue,
         )
+        logger.info("Started workflow for handling text message.", extra={
+                    "task_queue": config.temporal_task_queue, "workflow_id": handle.id, "run_id": handle.run_id})
 
-    return "OK"
+    return "ACCEPTED"

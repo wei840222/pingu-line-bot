@@ -5,6 +5,7 @@ description = "A fastapi-based LINE Bot that echoes user messages. The bot recei
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
+    "asgi-correlation-id>=4.3.4",
     "fastapi[standard]>=0.116.1",
     "line-bot-sdk>=3.17.1",
     "pydantic-settings>=2.10.1",

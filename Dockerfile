@@ -33,5 +33,5 @@ USER ${user}
 
 ENV PATH="/src/.venv/bin:$PATH"
 
-ENTRYPOINT ["fastapi"]
-CMD ["run"]
+ENTRYPOINT ["python"]
+CMD ["main.py"]

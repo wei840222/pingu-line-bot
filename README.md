@@ -1,3 +1,3 @@
-# pingu-bot
+# pingu-line-bot
 
 Noot Noot!

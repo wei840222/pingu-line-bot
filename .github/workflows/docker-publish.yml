@@ -126,7 +126,7 @@ jobs:
         working-directory: manifests
         run: |
           cd kubernetes/apps-autosync/bot-farm
-          kustomize edit set image ghcr.io/wei840222/pingu-bot:${{ github.ref_name }}
+          kustomize edit set image ghcr.io/wei840222/pingu-line-bot:${{ github.ref_name }}
           git add .
-          git commit -m "Update pingu-bot image to ${{ github.ref_name }}"
+          git commit -m "Update pingu-line-bot image to ${{ github.ref_name }}"
           git push

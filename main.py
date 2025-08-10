@@ -89,8 +89,7 @@ async def logging_middleware(request: Request, call_next) -> Response:
         response = await call_next(request)
     except Exception:
         # TODO: Validate that we don't swallow exceptions (unit test?)
-        structlog.stdlib.get_logger(
-            "fastapi.error").exception("Uncaught exception")
+        logging.getLogger("fastapi.error").exception("Uncaught exception")
         raise
     finally:
         process_time = time.perf_counter_ns() - start_time

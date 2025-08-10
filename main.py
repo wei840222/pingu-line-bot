@@ -1,4 +1,5 @@
 import time
+import logging
 import asyncio
 import uvicorn
 import structlog
@@ -70,7 +71,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(lifespan=lifespan, docs_url=None,
               redoc_url=None, openapi_url=None)
 
-access_logger = structlog.stdlib.get_logger("fastapi.access")
+access_logger = logging.getLogger("fastapi.access")
 
 
 @app.middleware("http")
@@ -110,16 +111,16 @@ async def logging_middleware(request: Request, call_next) -> Response:
                 "version": http_version,
             },
             "network": {"client": {"ip": client_host, "port": client_port}},
-            "duration": process_time
+            "duration": process_time,
         }
 
         match status_code:
-            case code if code >= 400 and code < 500:
-                access_logger.warning(message, **extra)
+            case code if 400 <= code < 500:
+                access_logger.warning(message, extra=extra)
             case code if code >= 500:
-                access_logger.error(message, **extra)
+                access_logger.error(message, extra=extra)
             case _:
-                access_logger.info(message, **extra)
+                access_logger.info(message, extra=extra)
 
         # seconds
         response.headers["X-Process-Time"] = str(process_time / 10.0 ** 9)

@@ -17,7 +17,7 @@ class LoggerConfig(BaseSettings):
 
     level: str = "info"
     format: str = "console"
-    color: bool = True
+    color: str = "true"
 
 
 class LoggerMixin:
@@ -83,7 +83,7 @@ class LoggerMixin:
                 log_renderer = structlog.processors.JSONRenderer()
             else:
                 log_renderer = structlog.dev.ConsoleRenderer(
-                    colors=config.color)
+                    colors=config.color.lower() == "true")
 
             formatter = structlog.stdlib.ProcessorFormatter(
                 # These run ONLY on `logging` entries that do NOT originate within

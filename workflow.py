@@ -25,22 +25,22 @@ class HandleTextMessageWorkflow:
             non_retryable_error_types=[ApiException.__name__],
         )
 
-        match input.message.strip().lower():
-            case text if any([keyword in text for keyword in ["pingu"]]):
+        match input.message.strip().lower().replace(" ", ""):
+            case text if any([keyword == text for keyword in ["pingu"]]):
                 await workflow.execute_activity(
                     ReplyActivity.reply_quick_reply,  # type: ignore
                     ReplyQuickReplyActivityParams(
                         reply_token=input.reply_token,
                         quote_token=input.quote_token,
                         message="想讓 Pingu 怎麼叫 ?",
-                        quick_messages=["叫", "驚訝", "生氣", "天婦羅"],
+                        quick_messages=["叫", "驚訝", "生氣", "天婦羅", "甜甜圈", "雞排"],
                     ),
                     start_to_close_timeout=timedelta(seconds=5),
                     retry_policy=retry_policy,
                 )
                 return True
 
-            case text if any([keyword in text for keyword in ["叫", "noot", "noot noot"]]):
+            case text if any([keyword == text for keyword in ["叫", "noot", "noot noot"]]):
                 await workflow.execute_activity(
                     ReplyActivity.reply_audio,  # type: ignore
                     ReplyAudioActivityParams(
@@ -53,7 +53,7 @@ class HandleTextMessageWorkflow:
                 )
                 return True
 
-            case text if any([keyword in text for keyword in ["驚訝", "驚"]]):
+            case text if any([keyword == text for keyword in ["驚訝", "驚"]]):
                 await workflow.execute_activity(
                     ReplyActivity.reply_audio,  # type: ignore
                     ReplyAudioActivityParams(
@@ -66,7 +66,7 @@ class HandleTextMessageWorkflow:
                 )
                 return True
 
-            case text if any([keyword in text for keyword in ["生氣", "氣"]]):
+            case text if any([keyword == text for keyword in ["生氣", "氣"]]):
                 await workflow.execute_activity(
                     ReplyActivity.reply_audio,  # type: ignore
                     ReplyAudioActivityParams(
@@ -79,13 +79,39 @@ class HandleTextMessageWorkflow:
                 )
                 return True
 
-            case text if any([keyword in text for keyword in ["天婦羅", "乾", "幹"]]):
+            case text if any([keyword == text for keyword in ["天婦羅", "乾", "幹", "幹你娘"]]):
                 await workflow.execute_activity(
                     ReplyActivity.reply_audio,  # type: ignore
                     ReplyAudioActivityParams(
                         reply_token=input.reply_token,
                         content_url="https://static.weii.dev/audio/pingu/oh_fucking.mp3",
                         duration=4000,
+                    ),
+                    start_to_close_timeout=timedelta(seconds=5),
+                    retry_policy=retry_policy,
+                )
+                return True
+
+            case text if any([keyword == text for keyword in ["甜甜圈"]]):
+                await workflow.execute_activity(
+                    ReplyActivity.reply_audio,  # type: ignore
+                    ReplyAudioActivityParams(
+                        reply_token=input.reply_token,
+                        content_url="https://static.weii.dev/audio/pingu/donut.mp3",
+                        duration=4000,
+                    ),
+                    start_to_close_timeout=timedelta(seconds=5),
+                    retry_policy=retry_policy,
+                )
+                return True
+
+            case text if any([keyword == text for keyword in ["雞排", "機掰", "雞巴", "雞掰"]]):
+                await workflow.execute_activity(
+                    ReplyActivity.reply_audio,  # type: ignore
+                    ReplyAudioActivityParams(
+                        reply_token=input.reply_token,
+                        content_url="https://static.weii.dev/audio/pingu/jiba.mp3",
+                        duration=2000,
                     ),
                     start_to_close_timeout=timedelta(seconds=5),
                     retry_policy=retry_policy,

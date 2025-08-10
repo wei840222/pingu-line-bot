@@ -33,7 +33,7 @@ class HandleTextMessageWorkflow:
                         reply_token=input.reply_token,
                         quote_token=input.quote_token,
                         message="想讓 Pingu 怎麼叫 ?",
-                        quick_messages=["叫", "驚訝", "生氣"],
+                        quick_messages=["叫", "驚訝", "生氣", "天婦ㄝ"],
                     ),
                     start_to_close_timeout=timedelta(seconds=5),
                     retry_policy=retry_policy,
@@ -72,7 +72,20 @@ class HandleTextMessageWorkflow:
                     ReplyAudioActivityParams(
                         reply_token=input.reply_token,
                         content_url="https://static.weii.dev/audio/pingu/sms.mp3",
-                        duration=3000,
+                        duration=4000,
+                    ),
+                    start_to_close_timeout=timedelta(seconds=5),
+                    retry_policy=retry_policy,
+                )
+                return True
+
+            case text if any([keyword in text for keyword in ["天婦羅", "乾", "幹"]]):
+                await workflow.execute_activity(
+                    ReplyActivity.reply_audio,  # type: ignore
+                    ReplyAudioActivityParams(
+                        reply_token=input.reply_token,
+                        content_url="https://static.weii.dev/audio/pingu/oh_fucking.mp3",
+                        duration=4000,
                     ),
                     start_to_close_timeout=timedelta(seconds=5),
                     retry_policy=retry_policy,

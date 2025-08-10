@@ -32,6 +32,8 @@ RUN groupadd -g ${gid} ${group} \
 USER ${user}
 
 ENV PATH="/src/.venv/bin:$PATH"
+ENV LOG_LEVEL="info"
+ENV LOG_FORMAT="json"
 
 ENTRYPOINT ["python"]
 CMD ["main.py"]

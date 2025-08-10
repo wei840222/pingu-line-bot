@@ -13,7 +13,8 @@ class LoggerConfig(BaseSettings):
         extra="ignore",
     )
 
-    level: str = "INFO"
+    level: str = "info"
+    format: str = "console"
 
 
 class LoggerMixin:

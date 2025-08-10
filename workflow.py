@@ -33,7 +33,7 @@ class HandleTextMessageWorkflow:
                         reply_token=input.reply_token,
                         quote_token=input.quote_token,
                         message="想讓 Pingu 怎麼叫 ?",
-                        quick_messages=["叫", "驚訝", "生氣", "天婦ㄝ"],
+                        quick_messages=["叫", "驚訝", "生氣", "天婦羅"],
                     ),
                     start_to_close_timeout=timedelta(seconds=5),
                     retry_policy=retry_policy,

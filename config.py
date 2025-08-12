@@ -157,7 +157,7 @@ class Config(BaseSettings, LoggerMixin):
         description="The namespace for the Temporal workflows.")
 
     temporal_task_queue: str = Field(
-        default="PINGU_BOT",
+        default="BOT_FARM:PINGU_LINE_BOT",
         description="The task queue for the Temporal worker.")
 
 

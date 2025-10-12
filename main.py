@@ -19,13 +19,8 @@ from linebot.v3.messaging import (
 )
 
 from linebot.v3.webhook import WebhookParser
-from linebot.v3.exceptions import (
-    InvalidSignatureError
-)
-from linebot.v3.webhooks import (
-    MessageEvent,
-    TextMessageContent
-)
+from linebot.v3.exceptions import InvalidSignatureError
+from linebot.v3.webhooks import MessageEvent, TextMessageContent
 
 from config import config, logger
 from workflow import HandleTextMessageWorkflow, HandleTextMessageWorkflowParams
@@ -34,13 +29,21 @@ from activity import ReplyActivity
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    client = await TemporalClient.connect(config.temporal_address, namespace=config.temporal_namespace)
+    client = await TemporalClient.connect(
+        config.temporal_address, namespace=config.temporal_namespace
+    )
     app.state.temporal_client = client
-    logger.debug("Connected to Temporal server.", extra={
-                 "address": config.temporal_address, "namespace": config.temporal_namespace})
+    logger.debug(
+        "Connected to Temporal server.",
+        extra={
+            "address": config.temporal_address,
+            "namespace": config.temporal_namespace,
+        },
+    )
 
-    line_bot_api = AsyncMessagingApi(AsyncApiClient(Configuration(
-        access_token=config.line_channel_access_token)))
+    line_bot_api = AsyncMessagingApi(
+        AsyncApiClient(Configuration(access_token=config.line_channel_access_token))
+    )
 
     reply_activity = ReplyActivity(line_bot_api)
 
@@ -48,13 +51,13 @@ async def lifespan(app: FastAPI):
         client,
         task_queue=config.temporal_task_queue,
         workflows=[HandleTextMessageWorkflow],
-        activities=[reply_activity.reply_quick_reply,
-                    reply_activity.reply_audio],
+        activities=[reply_activity.reply_quick_reply, reply_activity.reply_audio],
     )
 
     task = asyncio.create_task(worker.run())
-    logger.info("Temporal worker started.", extra={
-                "task_queue": config.temporal_task_queue})
+    logger.info(
+        "Temporal worker started.", extra={"task_queue": config.temporal_task_queue}
+    )
 
     yield
 
@@ -63,13 +66,12 @@ async def lifespan(app: FastAPI):
         await task
     except asyncio.CancelledError:
         await worker.shutdown()
-        logger.info(
-            "Application shutdown: Temporal worker shutdown gracefully.")
+        logger.info("Application shutdown: Temporal worker shutdown gracefully.")
         await line_bot_api.api_client.close()
         config.logger.debug("Application shutdown: LINE API Client closed.")
 
-app = FastAPI(lifespan=lifespan, docs_url=None,
-              redoc_url=None, openapi_url=None)
+
+app = FastAPI(lifespan=lifespan, docs_url=None, redoc_url=None, openapi_url=None)
 
 access_logger = logging.getLogger("fastapi.access")
 
@@ -100,7 +102,7 @@ async def logging_middleware(request: Request, call_next) -> Response:
         http_method = request.method
         http_version = request.scope["http_version"]
         # Recreate the Uvicorn access log format, but add all parameters as structured information
-        message = f"""{client_host}:{client_port} - "{http_method} {url} HTTP/{http_version}" {status_code} {process_time / 10.0 ** 6}ms"""
+        message = f"""{client_host}:{client_port} - "{http_method} {url} HTTP/{http_version}" {status_code} {process_time / 10.0**6}ms"""
         extra = {
             "http": {
                 "url": str(request.url),
@@ -122,8 +124,9 @@ async def logging_middleware(request: Request, call_next) -> Response:
                 access_logger.info(message, extra=extra)
 
         # seconds
-        response.headers["X-Process-Time"] = str(process_time / 10.0 ** 9)
+        response.headers["X-Process-Time"] = str(process_time / 10.0**9)
         return response
+
 
 # This middleware must be placed after the logging, to populate the context with the request ID
 # NOTE: Why last??
@@ -143,10 +146,12 @@ async def handle_callback(request: Request, x_line_signature: Annotated[str, Hea
 
     try:
         events = WebhookParser(config.line_channel_secret).parse(
-            body.decode(), x_line_signature)
+            body.decode(), x_line_signature
+        )
     except InvalidSignatureError:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid signature.")
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid signature."
+        )
 
     temporal_client: TemporalClient = app.state.temporal_client
 
@@ -162,15 +167,18 @@ async def handle_callback(request: Request, x_line_signature: Annotated[str, Hea
             HandleTextMessageWorkflowParams(
                 reply_token=event.reply_token,  # type: ignore
                 quote_token=event.message.quote_token,
-                message=event.message.text
+                message=event.message.text,
             ),
             id=event.webhook_event_id,
             task_queue=config.temporal_task_queue,
         )
-        logger.info("Started workflow for handling text message.", extra={
-                    "task_queue": config.temporal_task_queue, "workflow_id": handle.id})
+        logger.info(
+            "Started workflow for handling text message.",
+            extra={"task_queue": config.temporal_task_queue, "workflow_id": handle.id},
+        )
 
     return "ACCEPTED"
+
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000, log_config=None)

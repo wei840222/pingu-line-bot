@@ -42,22 +42,25 @@ class ReplyActivity:
         response = await self.line_bot_api.reply_message(
             ReplyMessageRequest(
                 reply_token=input.reply_token,  # type: ignore
-                messages=[TextMessage(
-                    quote_token=input.quote_token,  # type: ignore
-                    text=input.message,
-                    quick_reply=QuickReply(  # type: ignore
-                        items=[
-                            QuickReplyItem(
-                                action=MessageAction(
-                                    label=text, text=text)
-                            ) for text in input.quick_messages  # type: ignore
-                        ]
+                messages=[
+                    TextMessage(
+                        quote_token=input.quote_token,  # type: ignore
+                        text=input.message,
+                        quick_reply=QuickReply(  # type: ignore
+                            items=[
+                                QuickReplyItem(
+                                    action=MessageAction(label=text, text=text)
+                                )
+                                for text in input.quick_messages  # type: ignore
+                            ]
+                        ),
                     )
-                )]  # type: ignore
+                ],  # type: ignore
             )
         )
-        logger.info("Reply audio message sent successfully.",
-                    extra={"response": response})
+        logger.info(
+            "Reply audio message sent successfully.", extra={"response": response}
+        )
         return response.to_dict()
 
     @activity.defn(name="ReplyAudioActivity")
@@ -65,10 +68,14 @@ class ReplyActivity:
         response = await self.line_bot_api.reply_message(
             ReplyMessageRequest(
                 reply_token=input.reply_token,  # type: ignore
-                messages=[AudioMessage(
-                    original_content_url=input.content_url, duration=input.duration)]  # type: ignore
+                messages=[
+                    AudioMessage(
+                        original_content_url=input.content_url, duration=input.duration
+                    )
+                ],  # type: ignore
             )
         )
-        logger.info("Reply audio message sent successfully.",
-                    extra={"response": response})
+        logger.info(
+            "Reply audio message sent successfully.", extra={"response": response}
+        )
         return response.to_dict()

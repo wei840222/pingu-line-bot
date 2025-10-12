@@ -11,7 +11,7 @@ on:
       - main
 
 env:
-  REGISTRY: gitea.tailb0283.ts.net
+  REGISTRY: registry-gitea.home-infra.weii.cloud
   IMAGE_NAME: ${{ gitea.repository }}
 
 jobs:
@@ -39,7 +39,14 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
 
-      - name: Build Docker image
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3.6.0
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ gitea.actor }}
+          password: ${{ secrets.PACKAGE_PAT }}
+
+      - name: Build and Push Docker image
         uses: docker/build-push-action@v6.18.0
         with:
           file: ./Dockerfile
@@ -47,53 +54,17 @@ jobs:
           platforms: |
             linux/amd64
             linux/arm64
-          outputs: type=oci,dest=./output.tar
+          push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=local,src=/buildx-cache,compression=zstd
           cache-to: type=local,dest=/buildx-cache,compression=zstd,mode=max
 
-      - name: Setup skopeo
-        if: gitea.event_name != 'pull_request'
-        run: |
-          curl -sL https://github.com/lework/skopeo-binary/releases/download/v1.20.0/skopeo-linux-amd64 -o skopeo
-          chmod +x ./skopeo
-          mv ./skopeo /usr/bin/skopeo
-          mkdir -p /etc/containers
-          tee > /etc/containers/policy.json <<EOF
-          {
-              "default": [
-                  {
-                      "type": "insecureAcceptAnything"
-                  }
-              ],
-              "transports":
-                  {
-                      "docker-daemon":
-                          {
-                              "": [{"type":"insecureAcceptAnything"}]
-                          }
-                  }
-          }
-          EOF
-          skopeo --version
-
-      - name: Push Docker image
-        if: gitea.event_name != 'pull_request'
-        env:
-          IMAGES: ${{ steps.meta.outputs.tags }}
-        run: |
-          echo "${{ secrets.PACKAGE_PAT }}" | skopeo login --tls-verify=false ${{ env.REGISTRY }} -u ${{ gitea.actor }} --password-stdin
-          for IMAGE in $IMAGES; do
-            TAG=${IMAGE#${{ env.REGISTRY }}/$(echo "${{ env.IMAGE_NAME }}" | tr '[:upper:]' '[:lower:]'):}
-            echo "Pushing image: \"$IMAGE\"", tag: \"$TAG\""."
-            skopeo copy --dest-tls-verify=false --multi-arch=all oci-archive:./output.tar:$TAG docker://$IMAGE
-          done
-
   update-github-manifests:
-    if: startsWith(gitea.ref, 'refs/tags/')
-    needs: build-push
     runs-on: ubuntu-latest
+
+    needs: build-push
+    if: startsWith(gitea.ref, 'refs/tags/')
 
     steps:
       - name: Checkout manifests repository
@@ -107,7 +78,7 @@ jobs:
         run: |
           set -x
           git config --global user.name "Gitea Actions"
-          git config --global user.email "actions@gitea.tailb0283.ts.net"
+          git config --global user.email "actions@gitea.home-infra.weii.cloud"
 
       - name: Setup kustomize
         run: |

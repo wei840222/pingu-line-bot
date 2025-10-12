@@ -4,7 +4,11 @@ from temporalio import workflow
 from temporalio.common import RetryPolicy
 
 with workflow.unsafe.imports_passed_through():
-    from activity import ReplyActivity, ReplyQuickReplyActivityParams, ReplyAudioActivityParams
+    from activity import (
+        ReplyActivity,
+        ReplyQuickReplyActivityParams,
+        ReplyAudioActivityParams,
+    )
     from linebot.v3.messaging.exceptions import ApiException
 
 
@@ -33,14 +37,23 @@ class HandleTextMessageWorkflow:
                         reply_token=input.reply_token,
                         quote_token=input.quote_token,
                         message="想讓 Pingu 怎麼叫 ?",
-                        quick_messages=["叫", "驚訝", "生氣", "天婦羅", "甜甜圈", "雞排"],
+                        quick_messages=[
+                            "叫",
+                            "驚訝",
+                            "生氣",
+                            "天婦羅",
+                            "甜甜圈",
+                            "雞排",
+                        ],
                     ),
                     start_to_close_timeout=timedelta(seconds=5),
                     retry_policy=retry_policy,
                 )
                 return True
 
-            case text if any([keyword == text for keyword in ["叫", "noot", "noot noot"]]):
+            case text if any(
+                [keyword == text for keyword in ["叫", "noot", "noot noot"]]
+            ):
                 await workflow.execute_activity(
                     ReplyActivity.reply_audio,  # type: ignore
                     ReplyAudioActivityParams(
@@ -79,7 +92,9 @@ class HandleTextMessageWorkflow:
                 )
                 return True
 
-            case text if any([keyword == text for keyword in ["天婦羅", "乾", "幹", "幹你娘"]]):
+            case text if any(
+                [keyword == text for keyword in ["天婦羅", "乾", "幹", "幹你娘"]]
+            ):
                 await workflow.execute_activity(
                     ReplyActivity.reply_audio,  # type: ignore
                     ReplyAudioActivityParams(
@@ -105,7 +120,9 @@ class HandleTextMessageWorkflow:
                 )
                 return True
 
-            case text if any([keyword == text for keyword in ["雞排", "機掰", "雞巴", "雞掰"]]):
+            case text if any(
+                [keyword == text for keyword in ["雞排", "機掰", "雞巴", "雞掰"]]
+            ):
                 await workflow.execute_activity(
                     ReplyActivity.reply_audio,  # type: ignore
                     ReplyAudioActivityParams(

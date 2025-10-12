@@ -127,8 +127,14 @@ class LoggerMixin:
                     sys.__excepthook__(exc_type, exc_value, exc_traceback)
                     return
 
-                self._logger.error("Uncaught exception", exc_info=(  # pyright: ignore[reportOptionalMemberAccess]
-                    exc_type, exc_value, exc_traceback))
+                self._logger.error(  # type: ignore
+                    "Uncaught exception",
+                    exc_info=(  # pyright: ignore[reportOptionalMemberAccess]
+                        exc_type,
+                        exc_value,
+                        exc_traceback,
+                    ),
+                )
 
             sys.excepthook = handle_exception
 
@@ -142,23 +148,25 @@ class Config(BaseSettings, LoggerMixin):
         extra="ignore",
     )
 
-    line_channel_secret: str = Field(
-        description="The secret key for the LINE channel.")
+    line_channel_secret: str = Field(description="The secret key for the LINE channel.")
 
     line_channel_access_token: str = Field(
-        description="The access token for the LINE  channel.")
+        description="The access token for the LINE  channel."
+    )
 
     temporal_address: str = Field(
         default="localhost:7233",
-        description="The address of the Temporal frontend server.")
+        description="The address of the Temporal frontend server.",
+    )
 
     temporal_namespace: str = Field(
-        default="default",
-        description="The namespace for the Temporal workflows.")
+        default="default", description="The namespace for the Temporal workflows."
+    )
 
     temporal_task_queue: str = Field(
         default="BOT_FARM:PINGU_LINE_BOT",
-        description="The task queue for the Temporal worker.")
+        description="The task queue for the Temporal worker.",
+    )
 
 
 config = Config()  # type: ignore

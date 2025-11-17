@@ -58,7 +58,7 @@ class HandleTextMessageWorkflow:
                     ReplyActivity.reply_audio,  # type: ignore
                     ReplyAudioActivityParams(
                         reply_token=input.reply_token,
-                        content_url="https://static.weii.dev/audio/pingu/noot_noot.mp3",
+                        content_url="https://folio.weii.cloud/files/audio/pingu/noot_noot.mp3",
                         duration=1000,
                     ),
                     start_to_close_timeout=timedelta(seconds=5),
@@ -71,7 +71,7 @@ class HandleTextMessageWorkflow:
                     ReplyActivity.reply_audio,  # type: ignore
                     ReplyAudioActivityParams(
                         reply_token=input.reply_token,
-                        content_url="https://static.weii.dev/audio/pingu/amazed.mp3",
+                        content_url="https://folio.weii.cloud/files/audio/pingu/amazed.mp3",
                         duration=1000,
                     ),
                     start_to_close_timeout=timedelta(seconds=5),
@@ -84,7 +84,7 @@ class HandleTextMessageWorkflow:
                     ReplyActivity.reply_audio,  # type: ignore
                     ReplyAudioActivityParams(
                         reply_token=input.reply_token,
-                        content_url="https://static.weii.dev/audio/pingu/sms.mp3",
+                        content_url="https://folio.weii.cloud/files/audio/pingu/sms.mp3",
                         duration=4000,
                     ),
                     start_to_close_timeout=timedelta(seconds=5),
@@ -99,7 +99,7 @@ class HandleTextMessageWorkflow:
                     ReplyActivity.reply_audio,  # type: ignore
                     ReplyAudioActivityParams(
                         reply_token=input.reply_token,
-                        content_url="https://static.weii.dev/audio/pingu/oh_fucking.mp3",
+                        content_url="https://folio.weii.cloud/files/audio/pingu/oh_fucking.mp3",
                         duration=4000,
                     ),
                     start_to_close_timeout=timedelta(seconds=5),
@@ -112,7 +112,7 @@ class HandleTextMessageWorkflow:
                     ReplyActivity.reply_audio,  # type: ignore
                     ReplyAudioActivityParams(
                         reply_token=input.reply_token,
-                        content_url="https://static.weii.dev/audio/pingu/donut.mp3",
+                        content_url="https://folio.weii.cloud/files/audio/pingu/donut.mp3",
                         duration=4000,
                     ),
                     start_to_close_timeout=timedelta(seconds=5),
@@ -127,7 +127,7 @@ class HandleTextMessageWorkflow:
                     ReplyActivity.reply_audio,  # type: ignore
                     ReplyAudioActivityParams(
                         reply_token=input.reply_token,
-                        content_url="https://static.weii.dev/audio/pingu/jiba.mp3",
+                        content_url="https://folio.weii.cloud/files/audio/pingu/jiba.mp3",
                         duration=2000,
                     ),
                     start_to_close_timeout=timedelta(seconds=5),

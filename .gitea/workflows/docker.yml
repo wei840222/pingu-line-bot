@@ -22,6 +22,23 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v5
 
+      - name: Install Trivy
+        env:
+          TRIVY_VERSION: v0.67.2
+        run: |
+          curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/bin $TRIVY_VERSION
+
+      - name: Run Trivy scan repository vulnerability
+        uses: aquasecurity/trivy-action@0.33.1
+        with:
+          skip-setup-trivy: true
+          scan-type: fs
+          scan-ref: .
+          format: table
+          severity: CRITICAL,HIGH,MEDIUM
+          ignore-unfixed: true
+          exit-code: 0
+
       - name: Setup Docker Context for Buildx
         run: |
           docker context create builders || docker context use builders
@@ -31,7 +48,6 @@ jobs:
         with:
           endpoint: builders
           driver-opts: image=moby/buildkit:latest
-          buildkitd-flags: --debug
 
       - name: Extract Docker metadata
         id: meta
@@ -47,6 +63,7 @@ jobs:
           password: ${{ secrets.PACKAGE_PAT }}
 
       - name: Build and Push Docker image
+        id: build-and-push
         uses: docker/build-push-action@v6.18.0
         with:
           file: ./Dockerfile
@@ -59,6 +76,20 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=local,src=/buildx-cache,compression=zstd
           cache-to: type=local,dest=/buildx-cache,compression=zstd,mode=max
+
+      - name: Run Trivy scan Docker image vulnerability
+        uses: aquasecurity/trivy-action@0.33.1
+        env:
+          DIGEST: ${{ steps.build-and-push.outputs.digest }}
+        with:
+          skip-setup-trivy: true
+          scan-type: image
+          image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@${{ steps.build-and-push.outputs.digest }}
+          format: table
+          vuln-type: os,library
+          severity: CRITICAL,HIGH,MEDIUM
+          ignore-unfixed: true
+          exit-code: 0
 
   update-github-manifests:
     runs-on: ubuntu-latest
